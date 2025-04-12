@@ -25,7 +25,7 @@ import {
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, CheckCircle as ApproveIcon, Cancel as RejectIcon } from '@mui/icons-material';
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 export default function Leaves() {
     const { user } = useAuthContext();
@@ -63,7 +63,7 @@ export default function Leaves() {
     const fetchCurrentEmployee = async () => {
         try {
             console.log('Fetching current employee...');
-            const response = await axios.get(`${API_URL}/employees/me`);
+            const response = await axios.get('/api/employees/me');
             console.log('Current employee data:', response.data);
 
             if (!response.data || !response.data._id) {
@@ -80,7 +80,7 @@ export default function Leaves() {
             setTimeout(async () => {
                 try {
                     console.log('Retrying employee data fetch...');
-                    const retryResponse = await axios.get(`${API_URL}/employees/me`);
+                    const retryResponse = await axios.get('/api/employees/me');
                     if (retryResponse.data && retryResponse.data._id) {
                         console.log('Retry successful, employee data:', retryResponse.data);
                         setCurrentEmployee(retryResponse.data);
@@ -99,7 +99,7 @@ export default function Leaves() {
         try {
             // Only fetch reporting employees if user is not admin or HR
             if (user?.role !== 'admin' && user?.role !== 'hr') {
-                const response = await axios.get(`${API_URL}/employees/reporting-to-me`);
+                const response = await axios.get('/api/employees/reporting-to-me');
                 setReportingEmployees(response.data || []);
             } else {
                 // Admins and HR should have access to all leaves anyway
@@ -113,7 +113,7 @@ export default function Leaves() {
 
     const fetchLeaves = async () => {
         try {
-            let url = `${API_URL}/leaves`;
+            let url = '/api/leaves';
 
             // Add query parameters based on view mode
             const params = new URLSearchParams();
@@ -122,13 +122,13 @@ export default function Leaves() {
             // If viewing team leaves and user is a manager but not admin/HR
             if (viewMode === 'team-leaves' && isManager && !isAdmin && !isHR) {
                 // Let the backend handle the filtering
-                url = `${API_URL}/leaves?${params.toString()}`;
+                url = `/api/leaves?${params.toString()}`;
             } else if (viewMode === 'all-leaves' && (isAdmin || isHR)) {
                 // All leaves for admin/HR
-                url = `${API_URL}/leaves?${params.toString()}`;
+                url = `/api/leaves?${params.toString()}`;
             } else {
                 // My leaves (default)
-                url = `${API_URL}/leaves?${params.toString()}`;
+                url = `/api/leaves?${params.toString()}`;
             }
 
             const response = await axios.get(url);
@@ -236,7 +236,7 @@ export default function Leaves() {
                     console.error('No employee ID found:', currentEmployee);
                     // Try to fetch the employee data again
                     try {
-                        const response = await axios.get(`${API_URL}/employees/me`);
+                        const response = await axios.get('/employees/me');
                         console.log('Refetched employee data:', response.data);
                         setCurrentEmployee(response.data);
 
@@ -248,7 +248,7 @@ export default function Leaves() {
                         };
 
                         console.log('Submitting leave request with refetched ID:', newLeaveData);
-                        const leaveResponse = await axios.post(`${API_URL}/leaves`, newLeaveData);
+                        const leaveResponse = await axios.post('/leaves', newLeaveData);
                         console.log('Leave request response:', leaveResponse.data);
                         setSuccess('Leave request submitted successfully');
                     } catch (fetchError) {
@@ -265,7 +265,7 @@ export default function Leaves() {
                     };
 
                     console.log('Submitting leave request with existing ID:', newLeaveData);
-                    const response = await axios.post(`${API_URL}/leaves`, newLeaveData);
+                    const response = await axios.post('/leaves', newLeaveData);
                     console.log('Leave request response:', response.data);
                     setSuccess('Leave request submitted successfully');
                 }

@@ -23,7 +23,7 @@ import {
 import { Edit as EditIcon } from '@mui/icons-material';
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 export default function Profile() {
     const { user, isLoading: authLoading } = useAuthContext();
@@ -41,7 +41,7 @@ export default function Profile() {
     useEffect(() => {
         const fetchEmployeeData = async () => {
             try {
-                const response = await axios.get(`${API_URL}/employees/me`);
+                const response = await axios.get('/api/employees/me');
 
                 if (response.data) {
                     setEmployeeData(response.data);

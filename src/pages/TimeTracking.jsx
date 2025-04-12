@@ -42,7 +42,7 @@ import {
     Group as TeamIcon
 } from '@mui/icons-material';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 export default function TimeTracking() {
     const { user } = useAuthContext();
@@ -66,7 +66,7 @@ export default function TimeTracking() {
 
     const checkManagerStatus = async () => {
         try {
-            const response = await axios.get(`${API_URL}/employees/reporting-to-me`);
+            const response = await axios.get('/api/employees/reporting-to-me');
             setIsManager(response.data.length > 0);
         } catch (err) {
             console.error('Error checking manager status:', err);
@@ -78,16 +78,16 @@ export default function TimeTracking() {
         setLoading(true);
         try {
             // Get today's entry
-            const todayResponse = await axios.get(`${API_URL}/time-entries/today`);
+            const todayResponse = await axios.get('/api/time-entries/today');
             setTodayEntry(todayResponse.data);
 
             if (viewMode === 'my-time') {
                 // Get recent personal entries (last 10)
-                const recentResponse = await axios.get(`${API_URL}/time-entries?limit=10`);
+                const recentResponse = await axios.get('/api/time-entries?limit=10');
                 setRecentEntries(recentResponse.data);
             } else if (viewMode === 'team-time' && (isManager || isAdmin || isHR)) {
                 // Get team entries
-                const teamResponse = await axios.get(`${API_URL}/time-entries/team`);
+                const teamResponse = await axios.get('/api/time-entries/team');
                 setTeamEntries(teamResponse.data);
             }
         } catch (err) {
@@ -100,7 +100,7 @@ export default function TimeTracking() {
 
     const handleClockIn = async () => {
         try {
-            const response = await axios.post(`${API_URL}/time-entries/clock-in`, {
+            const response = await axios.post('/api/time-entries/clock-in', {
                 location: 'Office'
             });
 
@@ -124,7 +124,7 @@ export default function TimeTracking() {
 
     const handleClockOut = async () => {
         try {
-            const response = await axios.post(`${API_URL}/time-entries/clock-out`, {
+            const response = await axios.post('/api/time-entries/clock-out', {
                 location: 'Office',
                 notes: notes
             });

@@ -46,8 +46,8 @@ export const AuthProvider = ({ children }) => {
 
         // Add request interceptor
         axios.interceptors.request.use((config) => {
-            // Add /api prefix if not already present and URL doesn't start with http
-            if (!config.url.startsWith('/api') && !config.url.startsWith('http')) {
+            // Only add /api prefix for relative URLs that don't already have it
+            if (!config.url.startsWith('http') && !config.url.startsWith('/api') && !config.url.includes('/api/')) {
                 config.url = `/api${config.url}`;
             }
             const token = localStorage.getItem('token');
