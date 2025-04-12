@@ -25,7 +25,7 @@ import {
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, CheckCircle as ApproveIcon, Cancel as RejectIcon } from '@mui/icons-material';
 import axios from 'axios';
 
-const API_URL = 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 export default function Leaves() {
     const { user } = useAuthContext();
