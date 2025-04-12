@@ -46,6 +46,10 @@ export const AuthProvider = ({ children }) => {
 
         // Add request interceptor
         axios.interceptors.request.use((config) => {
+            // Add /api prefix if not already present
+            if (!config.url.startsWith('/api')) {
+                config.url = `/api${config.url}`;
+            }
             const token = localStorage.getItem('token');
             if (token) {
                 config.headers.Authorization = `Bearer ${token}`;

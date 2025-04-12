@@ -28,7 +28,7 @@ import {
 } from '@mui/icons-material';
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 export default function Dashboard() {
     const { user } = useAuthContext();
@@ -47,10 +47,10 @@ export default function Dashboard() {
         const fetchDashboardData = async () => {
             try {
                 const [statsRes, activitiesRes, leavesRes, employeeRes] = await Promise.all([
-                    axios.get(`${API_URL}/dashboard/stats`),
-                    axios.get(`${API_URL}/dashboard/recent-activities`),
-                    axios.get(`${API_URL}/dashboard/recent-leaves`),
-                    axios.get(`${API_URL}/employees/me`)
+                    axios.get(`${API_URL}/api/dashboard/stats`),
+                    axios.get(`${API_URL}/api/dashboard/recent-activities`),
+                    axios.get(`${API_URL}/api/dashboard/recent-leaves`),
+                    axios.get(`${API_URL}/api/employees/me`)
                 ]);
 
                 setStats(statsRes.data);
