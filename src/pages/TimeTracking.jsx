@@ -180,18 +180,30 @@ export default function TimeTracking() {
     };
 
     const formatTime = (dateString) => {
-        return new Date(dateString).toLocaleTimeString('en-US', {
-            hour: '2-digit',
-            minute: '2-digit'
-        });
+        if (!dateString) return 'Invalid Date';
+        try {
+            return new Date(dateString).toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        } catch (e) {
+            console.error('Date formatting error:', e);
+            return 'Invalid Date';
+        }
     };
 
     const formatDate = (dateString) => {
-        return new Date(dateString).toLocaleDateString('en-US', {
-            weekday: 'short',
-            month: 'short',
-            day: 'numeric'
-        });
+        if (!dateString) return 'Invalid Date';
+        try {
+            return new Date(dateString).toLocaleDateString('en-US', {
+                weekday: 'short',
+                month: 'short',
+                day: 'numeric'
+            });
+        } catch (e) {
+            console.error('Date formatting error:', e);
+            return 'Invalid Date';
+        }
     };
 
     const calculateDuration = (startTime, endTime) => {
@@ -357,10 +369,10 @@ export default function TimeTracking() {
                                         {recentEntries.length > 0 ? (
                                             recentEntries.map((entry) => (
                                                 <TableRow key={entry._id}>
-                                                    <TableCell>{formatDate(entry.clockIn)}</TableCell>
-                                                    <TableCell>{formatTime(entry.clockIn)}</TableCell>
-                                                    <TableCell>{formatTime(entry.clockOut)}</TableCell>
-                                                    <TableCell>{entry.totalHours} hrs</TableCell>
+                                                    <TableCell>{entry.clockIn?.time ? formatDate(entry.clockIn.time) : formatDate(entry.date || entry.clockIn)}</TableCell>
+                                                    <TableCell>{entry.clockIn?.time ? formatTime(entry.clockIn.time) : formatTime(entry.clockIn)}</TableCell>
+                                                    <TableCell>{entry.clockOut?.time ? formatTime(entry.clockOut.time) : formatTime(entry.clockOut)}</TableCell>
+                                                    <TableCell>{entry.totalHours || entry.hours || '0'} hrs</TableCell>
                                                     <TableCell>{entry.notes || '-'}</TableCell>
                                                 </TableRow>
                                             ))
@@ -406,10 +418,10 @@ export default function TimeTracking() {
                                                 <TableCell>
                                                     {entry.employee?.firstName} {entry.employee?.lastName}
                                                 </TableCell>
-                                                <TableCell>{formatDate(entry.clockIn)}</TableCell>
-                                                <TableCell>{formatTime(entry.clockIn)}</TableCell>
-                                                <TableCell>{formatTime(entry.clockOut)}</TableCell>
-                                                <TableCell>{entry.totalHours} hrs</TableCell>
+                                                <TableCell>{entry.clockIn?.time ? formatDate(entry.clockIn.time) : formatDate(entry.date || entry.clockIn)}</TableCell>
+                                                <TableCell>{entry.clockIn?.time ? formatTime(entry.clockIn.time) : formatTime(entry.clockIn)}</TableCell>
+                                                <TableCell>{entry.clockOut?.time ? formatTime(entry.clockOut.time) : formatTime(entry.clockOut)}</TableCell>
+                                                <TableCell>{entry.totalHours || entry.hours || '0'} hrs</TableCell>
                                                 <TableCell>{entry.notes || '-'}</TableCell>
                                             </TableRow>
                                         ))
