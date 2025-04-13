@@ -284,10 +284,17 @@ export default function Leaves() {
         try {
             console.log(`Updating leave ${leaveId} status to ${newStatus}`);
 
+            // Include information about who performed this action
+            const updateData = {
+                status: newStatus,
+                updatedBy: currentEmployee?._id,
+                updateSource: 'manager-approval'
+            };
+
+            console.log('Sending status update with data:', updateData);
+
             // Use the regular update endpoint instead of status-specific endpoint
-            await axios.put(API_ENDPOINTS.LEAVES.UPDATE(leaveId), {
-                status: newStatus
-            });
+            await axios.put(API_ENDPOINTS.LEAVES.UPDATE(leaveId), updateData);
 
             setSuccess(`Leave request ${newStatus}`);
             fetchLeaves();
@@ -301,7 +308,7 @@ export default function Leaves() {
         try {
             console.log(`Approving leave ${leaveId} with manager status ${approvalStatus}`);
 
-            // Create managerApproval object directly without fetching the leave first
+            // Create payload matching exact structure from database
             const payload = {
                 managerApproval: {
                     status: approvalStatus,
@@ -313,7 +320,8 @@ export default function Leaves() {
 
             console.log('Sending manager approval payload:', payload);
 
-            await axios.put(API_ENDPOINTS.LEAVES.UPDATE(leaveId), payload);
+            const response = await axios.put(`${API_URL}/api/leaves/${leaveId}`, payload);
+            console.log('Manager approval response:', response.data);
 
             setSuccess(`Leave request ${approvalStatus === 'approved' ? 'approved' : 'rejected'} by manager`);
             fetchLeaves();
