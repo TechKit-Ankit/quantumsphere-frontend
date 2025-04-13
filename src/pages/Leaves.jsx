@@ -301,13 +301,8 @@ export default function Leaves() {
         try {
             console.log(`Approving leave ${leaveId} with manager status ${approvalStatus}`);
 
-            // First fetch the current leave to get all fields
-            const response = await axios.get(API_ENDPOINTS.LEAVES.GET(leaveId));
-            const currentLeave = response.data.data || response.data;
-
-            // Then update only the managerApproval field
-            const updatedLeave = {
-                ...currentLeave,
+            // Create managerApproval object directly without fetching the leave first
+            const payload = {
                 managerApproval: {
                     status: approvalStatus,
                     approvedBy: currentEmployee?._id,
@@ -316,9 +311,9 @@ export default function Leaves() {
                 }
             };
 
-            console.log('Sending complete leave object with updated managerApproval:', updatedLeave);
+            console.log('Sending manager approval payload:', payload);
 
-            await axios.put(API_ENDPOINTS.LEAVES.UPDATE(leaveId), updatedLeave);
+            await axios.put(API_ENDPOINTS.LEAVES.UPDATE(leaveId), payload);
 
             setSuccess(`Leave request ${approvalStatus === 'approved' ? 'approved' : 'rejected'} by manager`);
             fetchLeaves();
