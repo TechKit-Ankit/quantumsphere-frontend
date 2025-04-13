@@ -7,10 +7,7 @@ import {
     CssBaseline,
     Drawer,
     IconButton,
-    List,
-    ListItem,
-    ListItemIcon,
-    ListItemText,
+    List, ListItem, ListItemIcon, ListItemText,
     Toolbar,
     Typography,
     Button,
@@ -26,11 +23,7 @@ import {
     People as PeopleIcon,
     Person as PersonIcon,
     ExitToApp as ExitToAppIcon,
-    CalendarToday as CalendarIcon,
-    Assessment as AssessmentIcon,
-    Settings as SettingsIcon,
     Business as BusinessIcon,
-    PersonAdd as PersonAddIcon,
     EventNote as LeavesIcon,
     HowToReg as EnrollmentIcon,
     AccessTime as TimeTrackingIcon
@@ -42,7 +35,6 @@ const drawerWidth = 240;
 export default function Layout() {
     const { isAuthenticated, isLoading, error, user, logout } = useAuthContext();
     const [employeeData, setEmployeeData] = useState(null);
-    const [hasReportingEmployees, setHasReportingEmployees] = useState(false);
     const navigate = useNavigate();
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -53,23 +45,8 @@ export default function Layout() {
             try {
                 const response = await axios.get('/api/employees/me');
                 setEmployeeData(response.data.data || response.data);
-
-                // Only check for reporting employees if the user is not an admin
-                if (user?.role !== 'admin') {
-                    try {
-                        const reportingResponse = await axios.get('/api/employees/reporting-to-me');
-                        setHasReportingEmployees((reportingResponse.data.data || reportingResponse.data).length > 0);
-                    } catch (error) {
-                        console.error('Error checking reporting employees:', error);
-                        // Default to false for reporting employees on error
-                        setHasReportingEmployees(false);
-                    }
-                } else {
-                    // Admins should have access to the leave management regardless
-                    setHasReportingEmployees(false);
-                }
             } catch (error) {
-                console.error('Error fetching employee data:', error);
+                console.error('Error fetching employee data for layout:', error);
             }
         };
 
@@ -123,10 +100,7 @@ export default function Layout() {
             <Divider />
             <List>
                 {menuItems
-                    .filter(item =>
-                        (!item.role || item.role === user?.role) &&
-                        (!item.showIf || item.showIf())
-                    )
+                    .filter(item => !item.role || item.role === user?.role)
                     .map((item) => (
                         <ListItem
                             button
@@ -197,11 +171,12 @@ export default function Layout() {
                             {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
                         </Typography>
                     )}
-                    <IconButton color="inherit" onClick={handleLogout}>
+                    <IconButton color="inherit" onClick={handleLogout} title="Logout">
                         <ExitToAppIcon />
                     </IconButton>
                 </Toolbar>
             </AppBar>
+
             <Box
                 component="nav"
                 sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
@@ -212,7 +187,7 @@ export default function Layout() {
                         open={mobileOpen}
                         onClose={handleDrawerToggle}
                         ModalProps={{
-                            keepMounted: true, // Better open performance on mobile.
+                            keepMounted: true,
                         }}
                         sx={{
                             display: { xs: 'block', sm: 'none' },
@@ -234,6 +209,7 @@ export default function Layout() {
                     </Drawer>
                 )}
             </Box>
+
             <Box
                 component="main"
                 sx={{
