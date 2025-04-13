@@ -301,12 +301,13 @@ export default function Leaves() {
         try {
             console.log(`Approving leave ${leaveId} with manager status ${approvalStatus}`);
 
-            // Use the regular update endpoint with a simple field structure
-            // This is the most likely format your backend is expecting
+            // The backend expects managerApproval to be an object with a status property
+            // This is based on how the UI displays the data: leave.managerApproval.status
             const response = await axios.put(API_ENDPOINTS.LEAVES.UPDATE(leaveId), {
-                // Use a simple string for managerApproval instead of an object
-                // The backend likely expects this field to simply contain the status
-                managerApproval: approvalStatus
+                managerApproval: {
+                    status: approvalStatus,
+                    comments: comments || ''
+                }
             });
 
             console.log('Manager approval response:', response.data);
@@ -317,7 +318,7 @@ export default function Leaves() {
             if (err.response) {
                 console.error('API response:', err.response.status, err.response.data);
             }
-            setError(`Failed to ${approvalStatus} leave request. Please try again.`);
+            setError(`Failed to ${approvalStatus} leave request. Please check console for details.`);
         }
     };
 
