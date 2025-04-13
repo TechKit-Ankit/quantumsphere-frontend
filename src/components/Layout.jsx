@@ -52,13 +52,13 @@ export default function Layout() {
         const fetchEmployeeData = async () => {
             try {
                 const response = await axios.get('/api/employees/me');
-                setEmployeeData(response.data);
+                setEmployeeData(response.data.data || response.data);
 
                 // Only check for reporting employees if the user is not an admin
                 if (user?.role !== 'admin') {
                     try {
                         const reportingResponse = await axios.get('/api/employees/reporting-to-me');
-                        setHasReportingEmployees(reportingResponse.data.length > 0);
+                        setHasReportingEmployees((reportingResponse.data.data || reportingResponse.data).length > 0);
                     } catch (error) {
                         console.error('Error checking reporting employees:', error);
                         // Default to false for reporting employees on error

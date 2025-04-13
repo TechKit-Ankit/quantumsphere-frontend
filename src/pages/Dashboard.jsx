@@ -53,10 +53,10 @@ export default function Dashboard() {
                     axios.get(`${API_URL}/api/employees/me`)
                 ]);
 
-                setStats(statsRes.data);
-                setRecentActivities(activitiesRes.data);
-                setRecentLeaves(leavesRes.data);
-                setEmployeeData(employeeRes.data);
+                setStats(statsRes.data.data || statsRes.data);
+                setRecentActivities(activitiesRes.data.data || activitiesRes.data);
+                setRecentLeaves(leavesRes.data.data || leavesRes.data);
+                setEmployeeData(employeeRes.data.data || employeeRes.data);
             } catch (error) {
                 console.error('Error fetching dashboard data:', error);
                 setError('Failed to fetch dashboard data. Please try again later.');

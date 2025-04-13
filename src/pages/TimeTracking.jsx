@@ -66,7 +66,8 @@ export default function TimeTracking() {
     const checkManagerStatus = async () => {
         try {
             const response = await axios.get(API_ENDPOINTS.EMPLOYEES.ME);
-            setIsManager(response.data.role === 'manager');
+            const employeeData = response.data.data || response.data;
+            setIsManager(employeeData.role === 'manager');
         } catch (error) {
             console.error('Error checking manager status:', error);
         }
@@ -79,16 +80,16 @@ export default function TimeTracking() {
 
             // Fetch today's entry
             const todayResponse = await axios.get(API_ENDPOINTS.TIME_ENTRIES.TODAY);
-            setTodayEntry(todayResponse.data);
+            setTodayEntry(todayResponse.data.data || todayResponse.data);
 
             // Fetch recent entries
             const recentResponse = await axios.get(API_ENDPOINTS.TIME_ENTRIES.RECENT);
-            setRecentEntries(recentResponse.data);
+            setRecentEntries(recentResponse.data.data || recentResponse.data);
 
             // Fetch team entries if manager
             if (isManager && viewMode === 'team') {
                 const teamResponse = await axios.get(API_ENDPOINTS.TIME_ENTRIES.TEAM);
-                setTeamEntries(teamResponse.data);
+                setTeamEntries(teamResponse.data.data || teamResponse.data);
             }
         } catch (error) {
             console.error('Error fetching time data:', error);
@@ -103,7 +104,7 @@ export default function TimeTracking() {
             setLoading(true);
             setError(null);
             const response = await axios.post(API_ENDPOINTS.TIME_ENTRIES.CLOCK_IN);
-            setTodayEntry(response.data);
+            setTodayEntry(response.data.data || response.data);
             setSuccess('Successfully clocked in!');
             setTimeout(() => setSuccess(null), 3000);
         } catch (error) {
@@ -119,7 +120,7 @@ export default function TimeTracking() {
             setLoading(true);
             setError(null);
             const response = await axios.post(API_ENDPOINTS.TIME_ENTRIES.CLOCK_OUT, { notes });
-            setTodayEntry(response.data);
+            setTodayEntry(response.data.data || response.data);
             setSuccess('Successfully clocked out!');
             setClockOutOpen(false);
             setNotes('');

@@ -66,24 +66,28 @@ export default function Leaves() {
             const response = await axios.get('/api/employees/me');
             console.log('Current employee data:', response.data);
 
-            if (!response.data || !response.data._id) {
-                console.error('Invalid employee data received:', response.data);
+            const employeeData = response.data.data || response.data;
+
+            if (!employeeData || !employeeData._id) {
+                console.error('Invalid employee data received:', employeeData);
                 setError('Unable to load your employee profile. Please try refreshing the page or contact admin.');
                 return;
             }
 
-            setCurrentEmployee(response.data);
+            setCurrentEmployee(employeeData);
         } catch (error) {
             console.error('Error fetching current employee:', error);
 
-            // Attempt to retry once after a short delay
             setTimeout(async () => {
                 try {
                     console.log('Retrying employee data fetch...');
                     const retryResponse = await axios.get('/api/employees/me');
-                    if (retryResponse.data && retryResponse.data._id) {
-                        console.log('Retry successful, employee data:', retryResponse.data);
-                        setCurrentEmployee(retryResponse.data);
+
+                    const employeeData = retryResponse.data.data || retryResponse.data;
+
+                    if (employeeData && employeeData._id) {
+                        console.log('Retry successful, employee data:', employeeData);
+                        setCurrentEmployee(employeeData);
                     } else {
                         setError('Failed to load your employee profile. Please contact admin.');
                     }
@@ -97,17 +101,15 @@ export default function Leaves() {
 
     const fetchReportingEmployees = async () => {
         try {
-            // Only fetch reporting employees if user is not admin or HR
             if (user?.role !== 'admin' && user?.role !== 'hr') {
                 const response = await axios.get('/api/employees/reporting-to-me');
-                setReportingEmployees(response.data || []);
+                setReportingEmployees(response.data.data || response.data || []);
             } else {
-                // Admins and HR should have access to all leaves anyway
                 setReportingEmployees([]);
             }
         } catch (error) {
             console.error('Error fetching reporting employees:', error);
-            setReportingEmployees([]); // Default to empty array on error
+            setReportingEmployees([]);
         }
     };
 
@@ -115,24 +117,19 @@ export default function Leaves() {
         try {
             let url = '/api/leaves';
 
-            // Add query parameters based on view mode
             const params = new URLSearchParams();
             params.append('view', viewMode);
 
-            // If viewing team leaves and user is a manager but not admin/HR
             if (viewMode === 'team-leaves' && isManager && !isAdmin && !isHR) {
-                // Let the backend handle the filtering
                 url = `/api/leaves?${params.toString()}`;
             } else if (viewMode === 'all-leaves' && (isAdmin || isHR)) {
-                // All leaves for admin/HR
                 url = `/api/leaves?${params.toString()}`;
             } else {
-                // My leaves (default)
                 url = `/api/leaves?${params.toString()}`;
             }
 
             const response = await axios.get(url);
-            setLeaves(response.data);
+            setLeaves(response.data.data || response.data);
         } catch (err) {
             setError('Failed to fetch leaves');
         }
@@ -142,7 +139,6 @@ export default function Leaves() {
         console.log('Opening leave form dialog:', leave ? 'edit mode' : 'new mode');
 
         if (leave) {
-            // Can only edit your own leaves unless you're an admin
             if (!isAdmin && leave.employee._id !== currentEmployee?._id) {
                 setError("You can only edit your own leave requests");
                 return;
@@ -164,7 +160,7 @@ export default function Leaves() {
             const formValues = {
                 startDate: today,
                 endDate: today,
-                type: 'annual', // Set a default leave type
+                type: 'annual',
                 reason: '',
                 status: 'pending'
             };
@@ -199,7 +195,6 @@ export default function Leaves() {
             [name]: value
         });
 
-        // If start date is changed and is after end date, update end date
         if (name === 'startDate' && formData.endDate && new Date(value) > new Date(formData.endDate)) {
             setFormData(prev => ({
                 ...prev,
@@ -212,17 +207,14 @@ export default function Leaves() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            // Basic validation
             if (new Date(formData.endDate) < new Date(formData.startDate)) {
                 setError('End date cannot be before start date');
                 return;
             }
 
             if (selectedLeave) {
-                // Make a copy of the form data for the request
                 const updatedData = { ...formData };
 
-                // Only admin can change status
                 if (!isAdmin) {
                     delete updatedData.status;
                 }
@@ -231,16 +223,13 @@ export default function Leaves() {
                 await axios.put(`${API_URL}/leaves/${selectedLeave._id}`, updatedData);
                 setSuccess('Leave request updated successfully');
             } else {
-                // Create a new leave request
                 if (!currentEmployee || !currentEmployee._id) {
                     console.error('No employee ID found:', currentEmployee);
-                    // Try to fetch the employee data again
                     try {
                         const response = await axios.get('/employees/me');
                         console.log('Refetched employee data:', response.data);
                         setCurrentEmployee(response.data);
 
-                        // Create leave with the newly fetched employee ID
                         const newLeaveData = {
                             ...formData,
                             employee: response.data._id,
@@ -257,7 +246,6 @@ export default function Leaves() {
                         return;
                     }
                 } else {
-                    // Normal flow with existing employee ID
                     const newLeaveData = {
                         ...formData,
                         employee: currentEmployee._id,
@@ -365,7 +353,6 @@ export default function Leaves() {
                 </Button>
             </Box>
 
-            {/* Tab Navigation for Different Leave Views */}
             <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
                 <Tabs
                     value={viewMode}
@@ -378,7 +365,6 @@ export default function Leaves() {
                 </Tabs>
             </Box>
 
-            {/* Leave Balance Summary Card */}
             {currentEmployee && (
                 <Card sx={{ mb: 3 }}>
                     <CardContent>
@@ -459,7 +445,6 @@ export default function Leaves() {
                                             {leave.reason}
                                         </Typography>
 
-                                        {/* Show manager approval status if available */}
                                         {leave.managerApproval && leave.managerApproval.status !== 'pending' && (
                                             <Typography variant="body2" sx={{ mt: 1 }} component="div">
                                                 <strong>Manager: </strong>
@@ -471,7 +456,6 @@ export default function Leaves() {
                                             </Typography>
                                         )}
 
-                                        {/* Show warning if employee has no reporting manager */}
                                         {isAdmin && viewMode === 'all-leaves' &&
                                             !hasReportingManager(leave.employee?._id) &&
                                             leave.status === 'pending' && (
@@ -488,7 +472,6 @@ export default function Leaves() {
                                             sx={{ mb: 1 }}
                                         />
                                         <Box>
-                                            {/* Admin/HR Approval/Rejection buttons */}
                                             {(isAdmin || isHR) && leave.status === 'pending' && (
                                                 <>
                                                     <IconButton
@@ -510,7 +493,6 @@ export default function Leaves() {
                                                 </>
                                             )}
 
-                                            {/* Manager Approval/Rejection buttons - for manager of the employee */}
                                             {viewMode === 'team-leaves' &&
                                                 leave.status === 'pending' &&
                                                 reportingEmployees.some(emp => emp._id === leave.employee?._id) && (
@@ -534,7 +516,6 @@ export default function Leaves() {
                                                     </>
                                                 )}
 
-                                            {/* Edit/Delete buttons - constrain to admin or the employee who requested */}
                                             {(isAdmin || leave.employee?._id === currentEmployee?._id) && (
                                                 <>
                                                     <IconButton size="small" onClick={() => handleOpen(leave)}>
@@ -628,7 +609,6 @@ export default function Leaves() {
                             rows={3}
                         />
 
-                        {/* Status field - only visible to admins when editing an existing leave request */}
                         {isAdmin && selectedLeave && (
                             <FormControl fullWidth margin="normal">
                                 <InputLabel id="status-label">Status</InputLabel>

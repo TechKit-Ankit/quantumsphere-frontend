@@ -43,8 +43,8 @@ export default function Profile() {
             try {
                 const response = await axios.get('/api/employees/me');
 
-                if (response.data) {
-                    setEmployeeData(response.data);
+                if (response.data && response.data.data) {
+                    setEmployeeData(response.data.data);
                     setError('');
                 } else {
                     setError('No employee record found');
