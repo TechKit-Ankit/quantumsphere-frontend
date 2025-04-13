@@ -42,6 +42,7 @@ import {
     Group as TeamIcon
 } from '@mui/icons-material';
 import { API_ENDPOINTS } from '../config';
+import { extractResponseData, ensureArray, extractErrorMessage } from '../utils/apiUtils';
 
 export default function TimeTracking() {
     const { user } = useAuthContext();
@@ -66,8 +67,15 @@ export default function TimeTracking() {
     const checkManagerStatus = async () => {
         try {
             const response = await axios.get(API_ENDPOINTS.EMPLOYEES.ME);
-            const employeeData = response.data.data || response.data;
-            setIsManager(employeeData.role === 'manager');
+            if (!response || !response.data) {
+                console.error('Empty response when checking manager status');
+                return;
+            }
+
+            const employeeData = extractResponseData(response);
+            if (employeeData) {
+                setIsManager(employeeData.role === 'manager');
+            }
         } catch (error) {
             console.error('Error checking manager status:', error);
         }
@@ -79,17 +87,35 @@ export default function TimeTracking() {
             setError(null);
 
             // Fetch today's entry
-            const todayResponse = await axios.get(API_ENDPOINTS.TIME_ENTRIES.TODAY);
-            setTodayEntry(todayResponse.data.data || todayResponse.data);
+            try {
+                const todayResponse = await axios.get(API_ENDPOINTS.TIME_ENTRIES.TODAY);
+                const todayData = extractResponseData(todayResponse);
+                setTodayEntry(todayData);
+            } catch (err) {
+                console.error('Error fetching today\'s time entry:', err);
+                setTodayEntry(null);
+            }
 
             // Fetch recent entries
-            const recentResponse = await axios.get(API_ENDPOINTS.TIME_ENTRIES.RECENT);
-            setRecentEntries(recentResponse.data.data || recentResponse.data);
+            try {
+                const recentResponse = await axios.get(API_ENDPOINTS.TIME_ENTRIES.RECENT);
+                const recentData = extractResponseData(recentResponse);
+                setRecentEntries(ensureArray(recentData));
+            } catch (err) {
+                console.error('Error fetching recent time entries:', err);
+                setRecentEntries([]);
+            }
 
             // Fetch team entries if manager
             if (isManager && viewMode === 'team') {
-                const teamResponse = await axios.get(API_ENDPOINTS.TIME_ENTRIES.TEAM);
-                setTeamEntries(teamResponse.data.data || teamResponse.data);
+                try {
+                    const teamResponse = await axios.get(API_ENDPOINTS.TIME_ENTRIES.TEAM);
+                    const teamData = extractResponseData(teamResponse);
+                    setTeamEntries(ensureArray(teamData));
+                } catch (err) {
+                    console.error('Error fetching team time entries:', err);
+                    setTeamEntries([]);
+                }
             }
         } catch (error) {
             console.error('Error fetching time data:', error);
@@ -103,13 +129,23 @@ export default function TimeTracking() {
         try {
             setLoading(true);
             setError(null);
+
             const response = await axios.post(API_ENDPOINTS.TIME_ENTRIES.CLOCK_IN);
-            setTodayEntry(response.data.data || response.data);
-            setSuccess('Successfully clocked in!');
-            setTimeout(() => setSuccess(null), 3000);
+            if (!response || !response.data) {
+                throw new Error('Empty response received when clocking in');
+            }
+
+            const entryData = extractResponseData(response);
+            if (entryData) {
+                setTodayEntry(entryData);
+                setSuccess('Successfully clocked in!');
+                setTimeout(() => setSuccess(null), 3000);
+            } else {
+                throw new Error('Invalid data received when clocking in');
+            }
         } catch (error) {
             console.error('Error clocking in:', error);
-            setError('Failed to clock in. Please try again.');
+            setError(extractErrorMessage(error) || 'Failed to clock in. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -119,15 +155,25 @@ export default function TimeTracking() {
         try {
             setLoading(true);
             setError(null);
+
             const response = await axios.post(API_ENDPOINTS.TIME_ENTRIES.CLOCK_OUT, { notes });
-            setTodayEntry(response.data.data || response.data);
-            setSuccess('Successfully clocked out!');
-            setClockOutOpen(false);
-            setNotes('');
-            setTimeout(() => setSuccess(null), 3000);
+            if (!response || !response.data) {
+                throw new Error('Empty response received when clocking out');
+            }
+
+            const entryData = extractResponseData(response);
+            if (entryData) {
+                setTodayEntry(entryData);
+                setSuccess('Successfully clocked out!');
+                setClockOutOpen(false);
+                setNotes('');
+                setTimeout(() => setSuccess(null), 3000);
+            } else {
+                throw new Error('Invalid data received when clocking out');
+            }
         } catch (error) {
             console.error('Error clocking out:', error);
-            setError('Failed to clock out. Please try again.');
+            setError(extractErrorMessage(error) || 'Failed to clock out. Please try again.');
         } finally {
             setLoading(false);
         }
