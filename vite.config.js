@@ -13,5 +13,20 @@ export default defineConfig({
   },
   define: {
     'process.env.VITE_API_URL': JSON.stringify(process.env.VITE_API_URL)
+  },
+  server: {
+    proxy: {
+      '/api': {
+        target: process.env.VITE_API_URL || 'http://localhost:5000',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api/, '')
+      }
+    },
+    origin: [
+      'https://quantum-sphere.netlify.app',
+      'http://localhost:5173',
+      'https://quantumsphere-frontend.onrender.com'
+    ]
   }
 })

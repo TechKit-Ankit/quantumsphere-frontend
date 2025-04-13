@@ -41,8 +41,7 @@ import {
     Edit as EditIcon,
     Group as TeamIcon
 } from '@mui/icons-material';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+import { API_ENDPOINTS } from '../config';
 
 export default function TimeTracking() {
     const { user } = useAuthContext();
@@ -54,45 +53,46 @@ export default function TimeTracking() {
     const [success, setSuccess] = useState('');
     const [clockOutOpen, setClockOutOpen] = useState(false);
     const [notes, setNotes] = useState('');
-    const [viewMode, setViewMode] = useState('my-time');
+    const [viewMode, setViewMode] = useState('personal');
     const [isAdmin] = useState(user?.role === 'admin');
     const [isHR] = useState(user?.role === 'hr');
     const [isManager, setIsManager] = useState(false);
 
     useEffect(() => {
-        fetchTimeData();
         checkManagerStatus();
+        fetchTimeData();
     }, [viewMode]);
 
     const checkManagerStatus = async () => {
         try {
-            const response = await axios.get('/api/employees/reporting-to-me');
-            setIsManager(response.data.length > 0);
-        } catch (err) {
-            console.error('Error checking manager status:', err);
-            setIsManager(false);
+            const response = await axios.get(API_ENDPOINTS.EMPLOYEES.ME);
+            setIsManager(response.data.role === 'manager');
+        } catch (error) {
+            console.error('Error checking manager status:', error);
         }
     };
 
     const fetchTimeData = async () => {
-        setLoading(true);
         try {
-            // Get today's entry
-            const todayResponse = await axios.get('/api/time-entries/today');
+            setLoading(true);
+            setError(null);
+
+            // Fetch today's entry
+            const todayResponse = await axios.get(API_ENDPOINTS.TIME_ENTRIES.TODAY);
             setTodayEntry(todayResponse.data);
 
-            if (viewMode === 'my-time') {
-                // Get recent personal entries (last 10)
-                const recentResponse = await axios.get('/api/time-entries?limit=10');
-                setRecentEntries(recentResponse.data);
-            } else if (viewMode === 'team-time' && (isManager || isAdmin || isHR)) {
-                // Get team entries
-                const teamResponse = await axios.get('/api/time-entries/team');
+            // Fetch recent entries
+            const recentResponse = await axios.get(API_ENDPOINTS.TIME_ENTRIES.RECENT);
+            setRecentEntries(recentResponse.data);
+
+            // Fetch team entries if manager
+            if (isManager && viewMode === 'team') {
+                const teamResponse = await axios.get(API_ENDPOINTS.TIME_ENTRIES.TEAM);
                 setTeamEntries(teamResponse.data);
             }
-        } catch (err) {
-            console.error('Error fetching time data:', err);
-            setError('Failed to load time data');
+        } catch (error) {
+            console.error('Error fetching time data:', error);
+            setError('Failed to fetch time data. Please try again later.');
         } finally {
             setLoading(false);
         }
@@ -100,74 +100,66 @@ export default function TimeTracking() {
 
     const handleClockIn = async () => {
         try {
-            const response = await axios.post('/api/time-entries/clock-in', {
-                location: 'Office'
-            });
-
+            setLoading(true);
+            setError(null);
+            const response = await axios.post(API_ENDPOINTS.TIME_ENTRIES.CLOCK_IN);
             setTodayEntry(response.data);
-            setSuccess('Clocked in successfully');
-            fetchTimeData(); // Refresh data
-        } catch (err) {
-            console.error('Error clocking in:', err);
-            setError(err.response?.data?.message || 'Failed to clock in');
+            setSuccess('Successfully clocked in!');
+            setTimeout(() => setSuccess(null), 3000);
+        } catch (error) {
+            console.error('Error clocking in:', error);
+            setError('Failed to clock in. Please try again.');
+        } finally {
+            setLoading(false);
         }
-    };
-
-    const handleClockOutOpen = () => {
-        setClockOutOpen(true);
-    };
-
-    const handleClockOutClose = () => {
-        setClockOutOpen(false);
-        setNotes('');
     };
 
     const handleClockOut = async () => {
         try {
-            const response = await axios.post('/api/time-entries/clock-out', {
-                location: 'Office',
-                notes: notes
-            });
-
+            setLoading(true);
+            setError(null);
+            const response = await axios.post(API_ENDPOINTS.TIME_ENTRIES.CLOCK_OUT, { notes });
             setTodayEntry(response.data);
-            setSuccess('Clocked out successfully');
-            handleClockOutClose();
-            fetchTimeData(); // Refresh data
-        } catch (err) {
-            console.error('Error clocking out:', err);
-            setError(err.response?.data?.message || 'Failed to clock out');
+            setSuccess('Successfully clocked out!');
+            setClockOutOpen(false);
+            setNotes('');
+            setTimeout(() => setSuccess(null), 3000);
+        } catch (error) {
+            console.error('Error clocking out:', error);
+            setError('Failed to clock out. Please try again.');
+        } finally {
+            setLoading(false);
         }
     };
 
     const formatTime = (dateString) => {
-        if (!dateString) return 'N/A';
-        const date = new Date(dateString);
-        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        return new Date(dateString).toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit'
+        });
     };
 
     const formatDate = (dateString) => {
-        if (!dateString) return 'N/A';
-        const date = new Date(dateString);
-        return date.toLocaleDateString();
+        return new Date(dateString).toLocaleDateString('en-US', {
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric'
+        });
     };
 
-    const calculateDuration = (clockIn, clockOut) => {
-        if (!clockIn || !clockOut) return 'N/A';
-
-        const start = new Date(clockIn);
-        const end = new Date(clockOut);
-        const diffMs = end - start;
-
-        // Convert to hours and minutes
-        const hours = Math.floor(diffMs / (1000 * 60 * 60));
-        const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-
+    const calculateDuration = (startTime, endTime) => {
+        if (!startTime || !endTime) return 'In Progress';
+        const start = new Date(startTime);
+        const end = new Date(endTime);
+        const diff = end - start;
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
         return `${hours}h ${minutes}m`;
     };
 
     if (loading) {
         return (
-            <Box display="flex" justifyContent="center" alignItems="center" height="80vh">
+            <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
                 <CircularProgress />
             </Box>
         );
@@ -186,9 +178,9 @@ export default function TimeTracking() {
                     onChange={(e, newValue) => setViewMode(newValue)}
                     aria-label="time tracking tabs"
                 >
-                    <Tab label="MY TIME" value="my-time" />
+                    <Tab label="MY TIME" value="personal" />
                     {(isManager || isAdmin || isHR) && (
-                        <Tab label="TEAM TIME" value="team-time" />
+                        <Tab label="TEAM TIME" value="team" />
                     )}
                 </Tabs>
             </Box>
@@ -205,7 +197,7 @@ export default function TimeTracking() {
                 </Alert>
             )}
 
-            {viewMode === 'my-time' && (
+            {viewMode === 'personal' && (
                 <>
                     {/* Today's Time Entry Card */}
                     <Card sx={{ mb: 4 }}>
@@ -280,7 +272,7 @@ export default function TimeTracking() {
                                         variant="contained"
                                         color="secondary"
                                         startIcon={<ClockOutIcon />}
-                                        onClick={handleClockOutOpen}
+                                        onClick={() => setClockOutOpen(true)}
                                     >
                                         Clock Out
                                     </Button>
@@ -318,9 +310,9 @@ export default function TimeTracking() {
                                         {recentEntries.length > 0 ? (
                                             recentEntries.map((entry) => (
                                                 <TableRow key={entry._id}>
-                                                    <TableCell>{formatDate(entry.date)}</TableCell>
-                                                    <TableCell>{formatTime(entry.clockIn.time)}</TableCell>
-                                                    <TableCell>{formatTime(entry.clockOut.time)}</TableCell>
+                                                    <TableCell>{formatDate(entry.clockIn)}</TableCell>
+                                                    <TableCell>{formatTime(entry.clockIn)}</TableCell>
+                                                    <TableCell>{formatTime(entry.clockOut)}</TableCell>
                                                     <TableCell>{entry.totalHours} hrs</TableCell>
                                                     <TableCell>{entry.notes || '-'}</TableCell>
                                                 </TableRow>
@@ -340,7 +332,7 @@ export default function TimeTracking() {
                 </>
             )}
 
-            {viewMode === 'team-time' && (
+            {viewMode === 'team' && (
                 <Card>
                     <CardContent>
                         <Box display="flex" alignItems="center" mb={2}>
@@ -367,9 +359,9 @@ export default function TimeTracking() {
                                                 <TableCell>
                                                     {entry.employee?.firstName} {entry.employee?.lastName}
                                                 </TableCell>
-                                                <TableCell>{formatDate(entry.date)}</TableCell>
-                                                <TableCell>{formatTime(entry.clockIn.time)}</TableCell>
-                                                <TableCell>{formatTime(entry.clockOut.time)}</TableCell>
+                                                <TableCell>{formatDate(entry.clockIn)}</TableCell>
+                                                <TableCell>{formatTime(entry.clockIn)}</TableCell>
+                                                <TableCell>{formatTime(entry.clockOut)}</TableCell>
                                                 <TableCell>{entry.totalHours} hrs</TableCell>
                                                 <TableCell>{entry.notes || '-'}</TableCell>
                                             </TableRow>
@@ -389,7 +381,7 @@ export default function TimeTracking() {
             )}
 
             {/* Clock Out Dialog */}
-            <Dialog open={clockOutOpen} onClose={handleClockOutClose}>
+            <Dialog open={clockOutOpen} onClose={() => setClockOutOpen(false)}>
                 <DialogTitle>Clock Out</DialogTitle>
                 <DialogContent>
                     <Typography variant="body2" paragraph>
@@ -407,7 +399,7 @@ export default function TimeTracking() {
                     />
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={handleClockOutClose}>Cancel</Button>
+                    <Button onClick={() => setClockOutOpen(false)}>Cancel</Button>
                     <Button variant="contained" color="primary" onClick={handleClockOut}>
                         Clock Out
                     </Button>

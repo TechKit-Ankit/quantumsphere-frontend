@@ -3,20 +3,20 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
 import axios from 'axios'
+import { API_URL, API_ENDPOINTS } from './config'
 
 // Immediate API check to see if backend is available
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const checkBackendConnection = async () => {
   try {
     const startTime = Date.now();
     console.log(`Checking backend connectivity at ${API_URL}...`);
 
     // Set timeout to 2 seconds for quick response
-    const response = await axios.get(`${API_URL}/health`, {
+    const response = await axios.get(`${API_URL}${API_ENDPOINTS.HEALTH}`, {
       timeout: 2000
     }).catch(e => {
       // Try a general request if health endpoint doesn't exist
-      return axios.get(API_URL, { timeout: 2000 });
+      return axios.get(`${API_URL}${API_ENDPOINTS.HEALTH}`);
     });
 
     const elapsedTime = Date.now() - startTime;

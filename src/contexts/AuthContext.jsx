@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
+import { API_URL, API_ENDPOINTS } from '../config';
 
 const AuthContext = createContext();
 
@@ -22,7 +23,7 @@ export const AuthProvider = ({ children }) => {
         }
 
         try {
-            const response = await axios.get('/api/auth/me');
+            const response = await axios.get(API_ENDPOINTS.AUTH.ME);
             setUser(response.data.user);
             setIsAuthenticated(true);
         } catch (error) {
@@ -36,9 +37,8 @@ export const AuthProvider = ({ children }) => {
 
     const setupAxiosInterceptors = () => {
         // Set base URL from environment variable
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-        axios.defaults.baseURL = apiUrl;
-        console.log('API URL set to:', apiUrl);
+        axios.defaults.baseURL = API_URL;
+        console.log('API URL set to:', API_URL);
 
         // Clear any existing interceptors
         axios.interceptors.request.clear();
@@ -74,7 +74,7 @@ export const AuthProvider = ({ children }) => {
     const login = async (email, password) => {
         try {
             console.log('Attempting login with:', email);
-            const response = await axios.post('/api/auth/login', { email, password });
+            const response = await axios.post(API_ENDPOINTS.AUTH.LOGIN, { email, password });
             console.log('Login response:', response.data);
 
             const { token, user } = response.data;
@@ -96,7 +96,7 @@ export const AuthProvider = ({ children }) => {
     const register = async (email, password) => {
         try {
             console.log('Attempting registration with:', email);
-            const response = await axios.post('/api/auth/register', { email, password });
+            const response = await axios.post(API_ENDPOINTS.AUTH.REGISTER, { email, password });
             console.log('Registration response:', response.data);
 
             const { token, user } = response.data;
