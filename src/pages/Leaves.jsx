@@ -311,22 +311,10 @@ export default function Leaves() {
 
     const handleManagerApproval = async (leaveId, approvalStatus, comments = '') => {
         try {
-            console.log(`Approving leave ${leaveId} with manager status ${approvalStatus}`);
+            console.log(`Approving leave ${leaveId} via Manager with status ${approvalStatus}`);
 
-            // Fetch the current leave to get all required fields
-            const fetchResponse = await axios.get(`${API_URL}/api/leaves/${leaveId}`);
-            const currentLeave = fetchResponse.data.data || fetchResponse.data;
-
-            console.log('Current leave data:', currentLeave);
-
-            // Include ALL required fields for validation
+            // Construct payload with only the managerApproval object
             const payload = {
-                // Required validation fields
-                type: currentLeave.type,
-                startDate: currentLeave.startDate,
-                endDate: currentLeave.endDate,
-                reason: currentLeave.reason,
-                // Our update to managerApproval
                 managerApproval: {
                     status: approvalStatus,
                     approvedBy: currentEmployee?._id,
@@ -335,9 +323,10 @@ export default function Leaves() {
                 }
             };
 
-            console.log('Sending complete payload:', payload);
+            console.log('Sending manager approval payload:', payload);
 
-            const response = await axios.put(`${API_URL}/api/leaves/${leaveId}`, payload);
+            // Use the correct endpoint from config for the PUT request
+            const response = await axios.put(API_ENDPOINTS.LEAVES.UPDATE(leaveId), payload);
             console.log('Manager approval response:', response.data);
 
             setSuccess(`Leave request ${approvalStatus === 'approved' ? 'approved' : 'rejected'} by manager`);
@@ -346,8 +335,10 @@ export default function Leaves() {
             console.error('Error in manager approval:', err);
             if (err.response) {
                 console.error('API response:', err.response.status, err.response.data);
+                setError(`Failed to ${approvalStatus} leave request: ${err.response.data?.message || 'Server error'}`);
+            } else {
+                setError(`Failed to ${approvalStatus} leave request. Please try again.`);
             }
-            setError(`Failed to ${approvalStatus} leave request. Please try again.`);
         }
     };
 
