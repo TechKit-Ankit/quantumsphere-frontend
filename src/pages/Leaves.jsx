@@ -309,41 +309,59 @@ export default function Leaves() {
         }
     };
 
-    const handleManagerApproval = async (leaveId, approvalStatus, comments = '') => {
+    const handleManagerApproval = async (leave, approvalStatus, comments = '') => {
         try {
-            console.log(`Approving leave ${leaveId} via Manager with status ${approvalStatus}`);
+            console.log(`Approving leave ${leave._id} via Manager with status ${approvalStatus}`);
 
-            // Fetch the current leave first to get all required fields for validation
-            console.log(`Fetching leave ${leaveId} before manager approval...`);
-            const fetchResponse = await axios.get(API_ENDPOINTS.LEAVES.UPDATE(leaveId)); // Use UPDATE endpoint for GET, assuming GET /:id exists
-            const currentLeave = fetchResponse.data.data || fetchResponse.data;
-            console.log('Fetched current leave data:', currentLeave);
+            // --- Pre-validation before sending --- 
+            const safeGetISOString = (dateInput) => {
+                if (!dateInput) return null;
+                const date = new Date(dateInput);
+                if (isNaN(date.getTime())) {
+                    console.error("Invalid date detected in leave record:", dateInput);
+                    return null;
+                }
+                return date.toISOString();
+            };
 
-            if (!currentLeave) {
-                throw new Error('Leave not found during fetch.');
+            const isoStartDate = safeGetISOString(leave.startDate);
+            const isoEndDate = safeGetISOString(leave.endDate);
+            const trimmedReason = leave.reason ? leave.reason.trim() : '';
+            const validTypes = ['annual', 'sick', 'personal', 'other'];
+
+            // Check required fields before creating payload
+            if (!validTypes.includes(leave.type)) {
+                setError(`Invalid leave type detected: '${leave.type}'. Cannot approve.`);
+                return;
             }
+            if (!isoStartDate || !isoEndDate) {
+                setError('Invalid start or end date in the leave record. Cannot approve.');
+                return;
+            }
+            if (trimmedReason === '') {
+                setError('Leave reason is missing or empty. Cannot approve.');
+                return;
+            }
+            // --- End Pre-validation --- 
 
-            // Construct the complete payload required by PUT validation
+            // Construct the payload ONLY if pre-validation passes
             const payload = {
-                type: currentLeave.type,
-                startDate: currentLeave.startDate, // Ensure these are in correct format if needed
-                endDate: currentLeave.endDate,
-                reason: currentLeave.reason,
-                // The actual update
+                type: leave.type,
+                startDate: isoStartDate,
+                endDate: isoEndDate,
+                reason: trimmedReason,
                 managerApproval: {
                     status: approvalStatus,
                     approvedBy: currentEmployee?._id,
                     approvedAt: new Date().toISOString(),
                     comments: comments || ''
                 }
-                // Include other fields from currentLeave if necessary for validation or preservation
-                // status: currentLeave.status, // Keep original main status
             };
 
-            console.log('Sending manager approval payload (full object):', payload);
+            console.log('Sending manager approval payload (validated):', payload);
 
-            // Use the correct endpoint from config for the PUT request
-            const response = await axios.put(API_ENDPOINTS.LEAVES.UPDATE(leaveId), payload);
+            // Use the correct endpoint for the PUT request
+            const response = await axios.put(API_ENDPOINTS.LEAVES.UPDATE(leave._id), payload);
             console.log('Manager approval response:', response.data);
 
             setSuccess(`Leave request ${approvalStatus === 'approved' ? 'approved' : 'rejected'} by manager`);
@@ -553,7 +571,7 @@ export default function Leaves() {
                                                         <IconButton
                                                             size="small"
                                                             color="success"
-                                                            onClick={() => handleManagerApproval(leave._id, 'approved')}
+                                                            onClick={() => handleManagerApproval(leave, 'approved')}
                                                             title="Approve as Manager"
                                                         >
                                                             <ApproveIcon />
@@ -561,7 +579,7 @@ export default function Leaves() {
                                                         <IconButton
                                                             size="small"
                                                             color="error"
-                                                            onClick={() => handleManagerApproval(leave._id, 'rejected')}
+                                                            onClick={() => handleManagerApproval(leave, 'rejected')}
                                                             title="Reject as Manager"
                                                         >
                                                             <RejectIcon />
