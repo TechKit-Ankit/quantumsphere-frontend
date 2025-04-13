@@ -280,27 +280,32 @@ export default function Leaves() {
         }
     };
 
-    const handleUpdateStatus = async (leaveId, newStatus) => {
+    const handleUpdateStatus = async (leaveId, newStatus, comments = '') => {
         try {
-            console.log(`Updating leave ${leaveId} status to ${newStatus}`);
+            console.log(`Updating leave ${leaveId} status to ${newStatus} by admin/HR`);
 
-            // Include information about who performed this action
-            const updateData = {
+            // Payload for PATCH /status endpoint only needs status and comments
+            const payload = {
                 status: newStatus,
-                updatedBy: currentEmployee?._id,
-                updateSource: 'manager-approval'
+                comments: comments || ''
             };
 
-            console.log('Sending status update with data:', updateData);
+            console.log('Sending status update payload:', payload);
 
-            // Use the regular update endpoint instead of status-specific endpoint
-            await axios.put(API_ENDPOINTS.LEAVES.UPDATE(leaveId), updateData);
+            // Use the specific status update endpoint with PATCH
+            const response = await axios.patch(`${API_URL}/api/leaves/${leaveId}/status`, payload);
+            console.log('Admin/HR Status update response:', response.data);
 
             setSuccess(`Leave request ${newStatus}`);
             fetchLeaves();
         } catch (err) {
-            console.error('Error updating status:', err.response?.data || err.message);
-            setError(`Failed to ${newStatus} leave request: ${err.response?.data?.message || err.message}`);
+            console.error('Error updating status:', err);
+            if (err.response) {
+                console.error('API response:', err.response.status, err.response.data);
+                setError(`Failed to ${newStatus} leave request: ${err.response.data?.message || 'Server error'}`);
+            } else {
+                setError(`Failed to ${newStatus} leave request. Please try again.`);
+            }
         }
     };
 
