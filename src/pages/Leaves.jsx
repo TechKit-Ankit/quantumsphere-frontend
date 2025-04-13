@@ -299,22 +299,25 @@ export default function Leaves() {
 
     const handleManagerApproval = async (leaveId, approvalStatus, comments = '') => {
         try {
-            console.log(`Approving leave ${leaveId} with status ${approvalStatus}`);
+            console.log(`Approving leave ${leaveId} with manager status ${approvalStatus}`);
 
-            // Use the same structure as shown in the UI display code
-            await axios.put(API_ENDPOINTS.LEAVES.UPDATE(leaveId), {
-                managerApproval: {
-                    status: approvalStatus,
-                    comments: comments,
-                    date: new Date().toISOString()
-                }
+            // Use the regular update endpoint with a simple field structure
+            // This is the most likely format your backend is expecting
+            const response = await axios.put(API_ENDPOINTS.LEAVES.UPDATE(leaveId), {
+                // Use a simple string for managerApproval instead of an object
+                // The backend likely expects this field to simply contain the status
+                managerApproval: approvalStatus
             });
 
+            console.log('Manager approval response:', response.data);
             setSuccess(`Leave request ${approvalStatus === 'approved' ? 'approved' : 'rejected'} by manager`);
             fetchLeaves();
         } catch (err) {
-            console.error('Error in manager approval:', err.response?.data || err.message);
-            setError(`Failed to ${approvalStatus} leave request: ${err.response?.data?.message || err.message}`);
+            console.error('Error in manager approval:', err);
+            if (err.response) {
+                console.error('API response:', err.response.status, err.response.data);
+            }
+            setError(`Failed to ${approvalStatus} leave request. Please try again.`);
         }
     };
 
