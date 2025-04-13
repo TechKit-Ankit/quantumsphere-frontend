@@ -284,8 +284,8 @@ export default function Leaves() {
         try {
             console.log(`Updating leave ${leaveId} status to ${newStatus}`);
 
-            // Use the correct endpoint from config
-            await axios.put(API_ENDPOINTS.LEAVES.UPDATE_STATUS(leaveId), {
+            // Use the regular update endpoint instead of status-specific endpoint
+            await axios.put(API_ENDPOINTS.LEAVES.UPDATE(leaveId), {
                 status: newStatus
             });
 
@@ -301,8 +301,8 @@ export default function Leaves() {
         try {
             console.log(`Approving leave ${leaveId} with status ${approvalStatus}`);
 
-            // Use the correct endpoint from config
-            await axios.put(API_ENDPOINTS.LEAVES.UPDATE_STATUS(leaveId), {
+            // Use the regular update endpoint instead of status-specific endpoint
+            await axios.put(API_ENDPOINTS.LEAVES.UPDATE(leaveId), {
                 managerApproval: {
                     status: approvalStatus,
                     comments: comments,
