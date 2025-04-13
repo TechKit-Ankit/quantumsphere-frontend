@@ -29,7 +29,8 @@ export default function Auth() {
             await login(email, password);
             navigate('/dashboard');
         } catch (err) {
-            setError(err.response?.data?.message || 'Authentication failed');
+            console.error('Authentication error:', err);
+            setError(err.message || 'Authentication failed');
         }
     };
 

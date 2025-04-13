@@ -24,12 +24,21 @@ export const AuthProvider = ({ children }) => {
 
         try {
             const response = await axios.get(API_ENDPOINTS.AUTH.ME);
-            setUser(response.data.user);
+
+            // Handle the new response structure with success, message, and data fields
+            if (response.data.success === false) {
+                throw new Error(response.data.message || 'Authentication failed');
+            }
+
+            // Extract user data from the response
+            // Check for both new format (response.data.data) and old format (response.data)
+            const responseData = response.data.data || response.data;
+            setUser(responseData.user || responseData);
             setIsAuthenticated(true);
         } catch (error) {
             console.error('Auth check failed:', error);
             localStorage.removeItem('token');
-            setError(error.response?.data?.message || 'Authentication failed');
+            setError(error.response?.data?.message || error.message || 'Authentication failed');
         } finally {
             setIsLoading(false);
         }
@@ -77,7 +86,16 @@ export const AuthProvider = ({ children }) => {
             const response = await axios.post(API_ENDPOINTS.AUTH.LOGIN, { email, password });
             console.log('Login response:', response.data);
 
-            const { token, user } = response.data;
+            // Handle the new response structure with success, message, and data fields
+            if (response.data.success === false) {
+                throw new Error(response.data.message || 'Login failed');
+            }
+
+            // Extract token and user from the response data
+            // Check for both new format (response.data.data) and old format (response.data)
+            const responseData = response.data.data || response.data;
+            const { token, user } = responseData;
+
             if (!token || !user) {
                 throw new Error('Invalid response from server');
             }
@@ -88,7 +106,7 @@ export const AuthProvider = ({ children }) => {
             return user;
         } catch (error) {
             console.error('Login error:', error);
-            const errorMessage = error.response?.data?.message || 'Login failed';
+            const errorMessage = error.response?.data?.message || error.message || 'Login failed';
             throw new Error(errorMessage);
         }
     };
@@ -99,7 +117,16 @@ export const AuthProvider = ({ children }) => {
             const response = await axios.post(API_ENDPOINTS.AUTH.REGISTER, { email, password });
             console.log('Registration response:', response.data);
 
-            const { token, user } = response.data;
+            // Handle the new response structure with success, message, and data fields
+            if (response.data.success === false) {
+                throw new Error(response.data.message || 'Registration failed');
+            }
+
+            // Extract token and user from the response data
+            // Check for both new format (response.data.data) and old format (response.data)
+            const responseData = response.data.data || response.data;
+            const { token, user } = responseData;
+
             if (!token || !user) {
                 throw new Error('Invalid response from server');
             }
@@ -110,7 +137,7 @@ export const AuthProvider = ({ children }) => {
             return user;
         } catch (error) {
             console.error('Registration error:', error);
-            const errorMessage = error.response?.data?.message || 'Registration failed';
+            const errorMessage = error.response?.data?.message || error.message || 'Registration failed';
             throw new Error(errorMessage);
         }
     };
