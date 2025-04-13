@@ -308,9 +308,20 @@ export default function Leaves() {
         try {
             console.log(`Approving leave ${leaveId} with manager status ${approvalStatus}`);
 
-            // Make a direct PUT request without first fetching
-            // Simple payload - just update the managerApproval
+            // Fetch the current leave to get all required fields
+            const fetchResponse = await axios.get(`${API_URL}/api/leaves/${leaveId}`);
+            const currentLeave = fetchResponse.data.data || fetchResponse.data;
+
+            console.log('Current leave data:', currentLeave);
+
+            // Include ALL required fields for validation
             const payload = {
+                // Required validation fields
+                type: currentLeave.type,
+                startDate: currentLeave.startDate,
+                endDate: currentLeave.endDate,
+                reason: currentLeave.reason,
+                // Our update to managerApproval
                 managerApproval: {
                     status: approvalStatus,
                     approvedBy: currentEmployee?._id,
@@ -319,31 +330,13 @@ export default function Leaves() {
                 }
             };
 
-            // Use axios instance with auth header and try multiple endpoints
-            console.log('Checking API endpoints configuration:');
-            console.log('API URL:', API_URL);
-            console.log('LEAVES.UPDATE:', API_ENDPOINTS.LEAVES.UPDATE(leaveId));
+            console.log('Sending complete payload:', payload);
 
-            // Try the direct endpoint first
-            try {
-                const response = await axios.put(`${API_URL}${API_ENDPOINTS.LEAVES.UPDATE(leaveId)}`, payload);
-                console.log('Manager approval success response:', response.data);
-                setSuccess(`Leave request ${approvalStatus === 'approved' ? 'approved' : 'rejected'} by manager`);
-                fetchLeaves();
-                return;
-            } catch (err) {
-                console.error('First attempt failed, trying status update endpoint...');
+            const response = await axios.put(`${API_URL}/api/leaves/${leaveId}`, payload);
+            console.log('Manager approval response:', response.data);
 
-                // Try the status update endpoint as fallback
-                const response = await axios.patch(`${API_URL}${API_ENDPOINTS.LEAVES.UPDATE_STATUS(leaveId)}`, {
-                    status: approvalStatus,
-                    comments: comments
-                });
-
-                console.log('Status update success response:', response.data);
-                setSuccess(`Leave request ${approvalStatus === 'approved' ? 'approved' : 'rejected'} by manager`);
-                fetchLeaves();
-            }
+            setSuccess(`Leave request ${approvalStatus === 'approved' ? 'approved' : 'rejected'} by manager`);
+            fetchLeaves();
         } catch (err) {
             console.error('Error in manager approval:', err);
             if (err.response) {
