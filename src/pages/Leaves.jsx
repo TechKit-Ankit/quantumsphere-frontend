@@ -301,16 +301,20 @@ export default function Leaves() {
         try {
             console.log(`Approving leave ${leaveId} with manager status ${approvalStatus}`);
 
-            // The backend expects managerApproval to be an object with a status property
-            // This is based on how the UI displays the data: leave.managerApproval.status
-            const response = await axios.put(API_ENDPOINTS.LEAVES.UPDATE(leaveId), {
+            // Send payload matching the exact structure in the database
+            const payload = {
                 managerApproval: {
                     status: approvalStatus,
+                    approvedBy: currentEmployee?._id,
+                    approvedAt: new Date().toISOString(),
                     comments: comments || ''
                 }
-            });
+            };
 
-            console.log('Manager approval response:', response.data);
+            console.log('Sending manager approval with payload:', payload);
+
+            await axios.put(API_ENDPOINTS.LEAVES.UPDATE(leaveId), payload);
+
             setSuccess(`Leave request ${approvalStatus === 'approved' ? 'approved' : 'rejected'} by manager`);
             fetchLeaves();
         } catch (err) {
@@ -318,7 +322,7 @@ export default function Leaves() {
             if (err.response) {
                 console.error('API response:', err.response.status, err.response.data);
             }
-            setError(`Failed to ${approvalStatus} leave request. Please check console for details.`);
+            setError(`Failed to ${approvalStatus} leave request. Please try again.`);
         }
     };
 
