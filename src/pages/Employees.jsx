@@ -57,20 +57,37 @@ export default function Employees() {
         try {
             const response = await axios.get(`${API_URL}/api/employees`);
             console.log('Employees data received:', response.data);
-            setEmployees(response.data);
-            setManagers(response.data);
+
+            // Fix: Access data correctly from API response structure
+            const employeesData = response.data.data || response.data;
+
+            // Ensure we have an array
+            const employeesArray = Array.isArray(employeesData) ? employeesData : [];
+
+            setEmployees(employeesArray);
+            setManagers(employeesArray);
         } catch (error) {
             console.error('Error fetching employees:', error);
             setError('Failed to fetch employees');
+            // Initialize as empty arrays to prevent mapping errors
+            setEmployees([]);
+            setManagers([]);
         }
     };
 
     const fetchDepartments = async () => {
         try {
             const response = await axios.get(`${API_URL}/api/departments`);
-            setDepartments(response.data);
+
+            // Fix: Access data correctly from API response structure
+            const departmentsData = response.data.data || response.data;
+
+            // Ensure we have an array
+            setDepartments(Array.isArray(departmentsData) ? departmentsData : []);
         } catch (error) {
             console.error('Error fetching departments:', error);
+            // Initialize as empty array to prevent mapping errors
+            setDepartments([]);
         }
     };
 
@@ -142,6 +159,11 @@ export default function Employees() {
                 );
                 console.log('Update response:', response.data);
 
+                // Check if the response indicates an error
+                if (response.data && response.data.success === false) {
+                    throw new Error(response.data.message || 'Failed to update employee');
+                }
+
                 // Close dialog first to avoid UI glitches
                 handleCloseDialog();
 
@@ -150,24 +172,36 @@ export default function Employees() {
                     fetchEmployees();
                 }, 300);
             } else {
-                await axios.post(`${API_URL}/api/employees`, formData);
+                const response = await axios.post(`${API_URL}/api/employees`, formData);
+
+                // Check if the response indicates an error
+                if (response.data && response.data.success === false) {
+                    throw new Error(response.data.message || 'Failed to create employee');
+                }
+
                 handleCloseDialog();
                 fetchEmployees();
             }
         } catch (error) {
             console.error('Error saving employee:', error);
-            setError(error.response?.data?.message || 'Failed to save employee');
+            setError(error.response?.data?.message || error.message || 'Failed to save employee');
         }
     };
 
     const handleDelete = async (employeeId) => {
         if (window.confirm('Are you sure you want to delete this employee?')) {
             try {
-                await axios.delete(`${API_URL}/api/employees/${employeeId}`);
+                const response = await axios.delete(`${API_URL}/api/employees/${employeeId}`);
+
+                // Check if the response indicates an error
+                if (response.data && response.data.success === false) {
+                    throw new Error(response.data.message || 'Failed to delete employee');
+                }
+
                 fetchEmployees();
             } catch (error) {
                 console.error('Error deleting employee:', error);
-                setError('Failed to delete employee');
+                setError(error.response?.data?.message || error.message || 'Failed to delete employee');
             }
         }
     };

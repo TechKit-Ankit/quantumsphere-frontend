@@ -110,16 +110,21 @@ export default function CompanyRegistration() {
         e.preventDefault();
         try {
             const response = await axios.post(`${API_URL}/companies/register`, formData);
-            if (response.data.success) {
+            // Check for the new response structure
+            const isSuccess = response.data.success !== false;
+
+            if (isSuccess) {
                 navigate('/auth', {
                     state: {
                         message: 'Company registered successfully! Please log in with your admin credentials.',
                         email: formData.adminEmail
                     }
                 });
+            } else {
+                throw new Error(response.data.message || 'Registration failed');
             }
         } catch (error) {
-            setError(error.response?.data?.message || 'Registration failed');
+            setError(error.response?.data?.message || error.message || 'Registration failed');
         }
     };
 

@@ -107,7 +107,10 @@ export default function EnrollmentManagement() {
                 // Check if email exists
                 try {
                     const response = await axios.post(`${API_URL}/api/auth/check-email`, { email });
-                    if (!response.data.exists) {
+                    // Fix: Access data correctly from API response structure
+                    const responseData = response.data.data || response.data;
+
+                    if (!responseData.exists) {
                         setFormData(prev => ({ ...prev, email }));
                         setEmailExists(false);
                         return;
@@ -136,20 +139,32 @@ export default function EnrollmentManagement() {
     const fetchDepartments = async () => {
         try {
             const response = await axios.get(`${API_URL}/api/departments`);
-            setDepartments(response.data);
+            // Fix: Access data correctly from API response structure
+            const departmentsData = response.data.data || response.data;
+
+            // Ensure we have an array
+            setDepartments(Array.isArray(departmentsData) ? departmentsData : []);
         } catch (error) {
             console.error('Error fetching departments:', error);
             setError('Failed to fetch departments');
+            // Initialize as empty array to prevent mapping errors
+            setDepartments([]);
         }
     };
 
     const fetchManagers = async () => {
         try {
             const response = await axios.get(`${API_URL}/api/employees?status=active`);
-            setManagers(response.data);
+            // Fix: Access data correctly from API response structure
+            const managersData = response.data.data || response.data;
+
+            // Ensure we have an array
+            setManagers(Array.isArray(managersData) ? managersData : []);
         } catch (error) {
             console.error('Error fetching managers:', error);
             setError('Failed to fetch managers');
+            // Initialize as empty array to prevent mapping errors
+            setManagers([]);
         }
     };
 
@@ -205,9 +220,12 @@ export default function EnrollmentManagement() {
                         status: 'active'
                     });
 
+                    // Fix: Access data correctly from API response structure
+                    const deptData = deptResponse.data.data || deptResponse.data;
+
                     // Update departments list and get the new department's ID
                     await fetchDepartments();
-                    departmentId = deptResponse.data._id;
+                    departmentId = deptData._id;
                 } catch (error) {
                     setError(error.response?.data?.message || 'Failed to create department');
                     return;
@@ -224,9 +242,9 @@ export default function EnrollmentManagement() {
             const meResponse = await axios.get(`${API_URL}/api/auth/me`);
             console.log('Current user data:', meResponse.data);
 
-            // Extract company ID from the response
-            const userData = meResponse.data;
-            const companyId = userData?.user?.company;
+            // Fix: Access data correctly from API response structure
+            const userData = meResponse.data.data || meResponse.data;
+            const companyId = userData?.user?.company || userData?.company;
 
             if (!companyId) {
                 console.error('Company ID not found in user data:', userData);
@@ -239,7 +257,10 @@ export default function EnrollmentManagement() {
                 email: formData.email
             });
 
-            if (emailCheckResponse.data.exists) {
+            // Fix: Access data correctly from API response structure
+            const emailCheckData = emailCheckResponse.data.data || emailCheckResponse.data;
+
+            if (emailCheckData.exists) {
                 await generateUniqueEmail(formData.firstName, formData.lastName, formData.role);
             }
 
@@ -256,15 +277,18 @@ export default function EnrollmentManagement() {
 
             console.log('User creation response:', userResponse.data);
 
-            if (!userResponse.data?.user?._id) {
-                console.error('Invalid user creation response:', userResponse.data);
+            // Fix: Access data correctly from API response structure
+            const userResponseData = userResponse.data.data || userResponse.data;
+
+            if (!userResponseData?.user?._id) {
+                console.error('Invalid user creation response:', userResponseData);
                 throw new Error('Failed to create user account');
             }
 
             // Create employee with user reference and company ID
             const employeeData = {
                 ...formData,
-                userId: userResponse.data.user._id,
+                userId: userResponseData.user._id,
                 department: departmentId,
                 company: companyId, // Explicitly set company ID
                 enrollmentStatus: 'completed',
