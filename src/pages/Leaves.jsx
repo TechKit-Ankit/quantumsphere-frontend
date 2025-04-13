@@ -301,12 +301,12 @@ export default function Leaves() {
         try {
             console.log(`Approving leave ${leaveId} with status ${approvalStatus}`);
 
-            // Use the regular update endpoint instead of status-specific endpoint
+            // Use the same structure as shown in the UI display code
             await axios.put(API_ENDPOINTS.LEAVES.UPDATE(leaveId), {
                 managerApproval: {
                     status: approvalStatus,
                     comments: comments,
-                    date: new Date()
+                    date: new Date().toISOString()
                 }
             });
 
