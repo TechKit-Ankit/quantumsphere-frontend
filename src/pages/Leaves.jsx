@@ -308,8 +308,20 @@ export default function Leaves() {
         try {
             console.log(`Approving leave ${leaveId} with manager status ${approvalStatus}`);
 
-            // Create payload matching exact structure from database
+            // First, fetch the current leave to get all required fields
+            const fetchResponse = await axios.get(`${API_URL}/api/leaves/${leaveId}`);
+            const currentLeave = fetchResponse.data.data || fetchResponse.data;
+
+            console.log('Current leave data:', currentLeave);
+
+            // Include ALL required fields for validation
             const payload = {
+                // Required validation fields
+                type: currentLeave.type,
+                startDate: currentLeave.startDate,
+                endDate: currentLeave.endDate,
+                reason: currentLeave.reason,
+                // Our update to managerApproval
                 managerApproval: {
                     status: approvalStatus,
                     approvedBy: currentEmployee?._id,
@@ -318,7 +330,7 @@ export default function Leaves() {
                 }
             };
 
-            console.log('Sending manager approval payload:', payload);
+            console.log('Sending complete payload:', payload);
 
             const response = await axios.put(`${API_URL}/api/leaves/${leaveId}`, payload);
             console.log('Manager approval response:', response.data);
