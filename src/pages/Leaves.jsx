@@ -494,14 +494,10 @@ export default function Leaves() {
                                             {leave.reason}
                                         </Typography>
 
-                                        {leave.managerApproval && leave.managerApproval.status !== 'pending' && (
-                                            <Typography variant="body2" sx={{ mt: 1 }} component="div">
-                                                <strong>Manager: </strong>
-                                                <Chip
-                                                    label={leave.managerApproval.status}
-                                                    color={getStatusColor(leave.managerApproval.status)}
-                                                    size="small"
-                                                />
+                                        {/* Display Manager Approved text ONLY if main status is pending */}
+                                        {leave.status === 'pending' && leave.managerApproval?.status === 'approved' && (
+                                            <Typography variant="caption" display="block" sx={{ mt: 0.5, color: 'success.main' }}>
+                                                Manager: approved
                                             </Typography>
                                         )}
 
