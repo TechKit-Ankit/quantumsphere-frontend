@@ -24,8 +24,7 @@ import {
 } from '@mui/material';
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, CheckCircle as ApproveIcon, Cancel as RejectIcon } from '@mui/icons-material';
 import axios from 'axios';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+import { API_URL, API_ENDPOINTS } from '../config';
 
 export default function Leaves() {
     const { user } = useAuthContext();
@@ -115,23 +114,24 @@ export default function Leaves() {
 
     const fetchLeaves = async () => {
         try {
-            let url = '/api/leaves';
+            let endpointUrl;
 
-            const params = new URLSearchParams();
-            params.append('view', viewMode);
-
+            // Determine which endpoint to use based on view mode
             if (viewMode === 'team-leaves' && isManager && !isAdmin && !isHR) {
-                url = `/api/leaves?${params.toString()}`;
+                endpointUrl = API_ENDPOINTS.LEAVES.TEAM;
             } else if (viewMode === 'all-leaves' && (isAdmin || isHR)) {
-                url = `/api/leaves?${params.toString()}`;
+                endpointUrl = API_ENDPOINTS.LEAVES.ALL;
             } else {
-                url = `/api/leaves?${params.toString()}`;
+                endpointUrl = API_ENDPOINTS.LEAVES.ALL + '?view=' + viewMode;
             }
 
-            const response = await axios.get(url);
-            setLeaves(response.data.data || response.data);
+            const response = await axios.get(endpointUrl);
+            const leavesData = response.data.data || response.data;
+            setLeaves(Array.isArray(leavesData) ? leavesData : []);
         } catch (err) {
+            console.error('Error fetching leaves:', err);
             setError('Failed to fetch leaves');
+            setLeaves([]);
         }
     };
 
@@ -220,24 +220,25 @@ export default function Leaves() {
                 }
 
                 console.log('Updating leave:', updatedData);
-                await axios.put(`${API_URL}/leaves/${selectedLeave._id}`, updatedData);
+                await axios.put(API_ENDPOINTS.LEAVES.UPDATE(selectedLeave._id), updatedData);
                 setSuccess('Leave request updated successfully');
             } else {
                 if (!currentEmployee || !currentEmployee._id) {
                     console.error('No employee ID found:', currentEmployee);
                     try {
-                        const response = await axios.get('/employees/me');
+                        const response = await axios.get(API_ENDPOINTS.EMPLOYEES.ME);
                         console.log('Refetched employee data:', response.data);
-                        setCurrentEmployee(response.data);
+                        const employeeData = response.data.data || response.data;
+                        setCurrentEmployee(employeeData);
 
                         const newLeaveData = {
                             ...formData,
-                            employee: response.data._id,
+                            employee: employeeData._id,
                             status: 'pending'
                         };
 
                         console.log('Submitting leave request with refetched ID:', newLeaveData);
-                        const leaveResponse = await axios.post('/leaves', newLeaveData);
+                        const leaveResponse = await axios.post(API_ENDPOINTS.LEAVES.ALL, newLeaveData);
                         console.log('Leave request response:', leaveResponse.data);
                         setSuccess('Leave request submitted successfully');
                     } catch (fetchError) {
@@ -253,7 +254,7 @@ export default function Leaves() {
                     };
 
                     console.log('Submitting leave request with existing ID:', newLeaveData);
-                    const response = await axios.post('/leaves', newLeaveData);
+                    const response = await axios.post(API_ENDPOINTS.LEAVES.ALL, newLeaveData);
                     console.log('Leave request response:', response.data);
                     setSuccess('Leave request submitted successfully');
                 }
@@ -262,43 +263,58 @@ export default function Leaves() {
             fetchLeaves();
         } catch (err) {
             console.error('Leave request error:', err);
-            setError(err.response?.data?.message || 'Failed to save leave request');
+            setError(err.response?.data?.message || err.message || 'Failed to save leave request');
         }
     };
 
     const handleDelete = async (id) => {
         if (window.confirm('Are you sure you want to delete this leave request?')) {
             try {
-                await axios.delete(`${API_URL}/leaves/${id}`);
+                await axios.delete(API_ENDPOINTS.LEAVES.DELETE(id));
                 setSuccess('Leave request deleted successfully');
                 fetchLeaves();
             } catch (err) {
-                setError('Failed to delete leave request');
+                console.error('Error deleting leave:', err.response?.data || err.message);
+                setError('Failed to delete leave request: ' + (err.response?.data?.message || err.message));
             }
         }
     };
 
     const handleUpdateStatus = async (leaveId, newStatus) => {
         try {
-            await axios.put(`${API_URL}/leaves/${leaveId}`, { status: newStatus });
+            console.log(`Updating leave ${leaveId} status to ${newStatus}`);
+
+            // Use the correct endpoint from config
+            await axios.put(API_ENDPOINTS.LEAVES.UPDATE_STATUS(leaveId), {
+                status: newStatus
+            });
+
             setSuccess(`Leave request ${newStatus}`);
             fetchLeaves();
         } catch (err) {
-            setError(`Failed to ${newStatus} leave request`);
+            console.error('Error updating status:', err.response?.data || err.message);
+            setError(`Failed to ${newStatus} leave request: ${err.response?.data?.message || err.message}`);
         }
     };
 
     const handleManagerApproval = async (leaveId, approvalStatus, comments = '') => {
         try {
-            await axios.put(`${API_URL}/leaves/${leaveId}/manager-approval`, {
-                status: approvalStatus,
-                comments
+            console.log(`Approving leave ${leaveId} with status ${approvalStatus}`);
+
+            // Use the correct endpoint from config
+            await axios.put(API_ENDPOINTS.LEAVES.UPDATE_STATUS(leaveId), {
+                managerApproval: {
+                    status: approvalStatus,
+                    comments: comments,
+                    date: new Date()
+                }
             });
 
-            setSuccess(`Leave request ${approvalStatus === 'approved' ? 'approved' : 'rejected'}`);
+            setSuccess(`Leave request ${approvalStatus === 'approved' ? 'approved' : 'rejected'} by manager`);
             fetchLeaves();
         } catch (err) {
-            setError(`Failed to ${approvalStatus} leave request`);
+            console.error('Error in manager approval:', err.response?.data || err.message);
+            setError(`Failed to ${approvalStatus} leave request: ${err.response?.data?.message || err.message}`);
         }
     };
 
