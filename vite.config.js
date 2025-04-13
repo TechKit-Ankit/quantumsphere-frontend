@@ -23,10 +23,6 @@ export default defineConfig({
         rewrite: (path) => path.replace(/^\/api/, '')
       }
     },
-    origin: [
-      'https://quantum-sphere.netlify.app',
-      'http://localhost:5173',
-      'https://quantumsphere-frontend.onrender.com'
-    ]
+    origin: process.env.VITE_FRONTEND_URL || 'http://localhost:5173'
   }
 })
