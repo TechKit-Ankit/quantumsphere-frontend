@@ -109,7 +109,7 @@ export default function CompanyRegistration() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const response = await axios.post(`${API_URL}/companies/register`, formData);
+            const response = await axios.post(`${API_URL}/api/companies/register`, formData);
             // Check for the new response structure
             const isSuccess = response.data.success !== false;
 
